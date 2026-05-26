@@ -433,7 +433,13 @@ func (rs *Store) PopStateCache() []*types.StoreKVPair {
 
 // LatestVersion returns the latest version in the store
 func (rs *Store) LatestVersion() int64 {
-	return rs.LastCommitID().Version
+	// Read the version directly; do NOT route through LastCommitID(), which
+	// computes the full app-hash merkle root. LatestVersion is called on every
+	// query (baseapp.CreateQueryContext), so hashing here is pure waste.
+	if rs.lastCommitInfo == nil {
+		return GetLatestVersion(rs.db)
+	}
+	return rs.lastCommitInfo.Version
 }
 
 // LastCommitID implements Committer/CommitStore.
@@ -446,7 +452,9 @@ func (rs *Store) LastCommitID() types.CommitID {
 			Hash:    appHash, // set empty apphash to sha256([]byte{}) if info is nil
 		}
 	}
-	if len(rs.lastCommitInfo.CommitID().Hash) == 0 {
+	// Compute the commit ID (and thus the hash) once, not twice.
+	commitID := rs.lastCommitInfo.CommitID()
+	if len(commitID.Hash) == 0 {
 		emptyHash := sha256.Sum256([]byte{})
 		appHash := emptyHash[:]
 		return types.CommitID{
@@ -455,7 +463,7 @@ func (rs *Store) LastCommitID() types.CommitID {
 		}
 	}
 
-	return rs.lastCommitInfo.CommitID()
+	return commitID
 }
 
 // Commit implements Committer/CommitStore.

@@ -181,6 +181,29 @@ func HashFromMap(m map[string][]byte) []byte {
 	return mm.hash()
 }
 
+// RootHashFromMap computes only the merkle root of the sorted map, without
+// building the per-key proofs that ProofsFromMap allocates. It mirrors
+// ProofsFromMap's encoding exactly (same sorted, length-prefixed KVPair byte
+// slices) but calls merkle.HashFromByteSlices instead of ProofsFromByteSlices,
+// so the returned root is byte-identical to ProofsFromMap's first return value
+// while avoiding the proof + proto allocations. Used by CommitInfo.Hash, which
+// only needs the root.
+func RootHashFromMap(m map[string][]byte) []byte {
+	sm := newSimpleMap()
+	for k, v := range m {
+		sm.Set(k, v)
+	}
+
+	sm.Sort()
+	kvs := sm.Kvs
+	kvsBytes := make([][]byte, len(kvs.Pairs))
+	for i, kvp := range kvs.Pairs {
+		kvsBytes[i] = KVPair(kvp).Bytes()
+	}
+
+	return merkle.HashFromByteSlices(kvsBytes)
+}
+
 // ProofsFromMap generates proofs from a map. The keys/values of the map will be used as the keys/values
 // in the underlying key-value pairs.
 // The keys are sorted before the proofs are computed.
