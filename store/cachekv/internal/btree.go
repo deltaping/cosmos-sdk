@@ -36,6 +36,13 @@ func NewBTree() BTree {
 	}
 }
 
+// IsNil reports whether the BTree is the zero value (its inner tree has not
+// been allocated). cachekv uses this to allocate the sorted write cache lazily,
+// only for stores that are actually iterated.
+func (bt BTree) IsNil() bool {
+	return bt.tree == nil
+}
+
 func (bt BTree) Set(key, value []byte) {
 	bt.tree.Set(newItem(key, value))
 }

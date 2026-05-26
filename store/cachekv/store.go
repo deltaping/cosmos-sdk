@@ -39,8 +39,9 @@ func NewStore(parent types.KVStore) *Store {
 	return &Store{
 		cache:         make(map[string]*cValue),
 		unsortedCache: make(map[string]struct{}),
-		sortedCache:   internal.NewBTree(),
-		parent:        parent,
+		// sortedCache (the ordered write cache) is allocated lazily in dirtyItems,
+		// so read-only / never-iterated branched stores don't allocate a btree.
+		parent: parent,
 	}
 }
 
@@ -112,7 +113,9 @@ func (store *Store) resetCaches() {
 			delete(store.unsortedCache, key)
 		}
 	}
-	store.sortedCache = internal.NewBTree()
+	// Clear lazily: drop the btree (re-allocated on next iteration via dirtyItems)
+	// rather than allocating a fresh empty one on every reset.
+	store.sortedCache = internal.BTree{}
 }
 
 // Implements Cachetypes.KVStore.
@@ -121,7 +124,9 @@ func (store *Store) Write() {
 	defer store.mtx.Unlock()
 
 	if len(store.cache) == 0 && len(store.unsortedCache) == 0 {
-		store.sortedCache = internal.NewBTree()
+		// Nothing buffered; clear lazily. Avoids allocating a btree for an empty
+		// store, which Write() hits for every untouched branched substore at commit.
+		store.sortedCache = internal.BTree{}
 		return
 	}
 
@@ -294,6 +299,10 @@ const minSortSize = 1024
 
 // Constructs a slice of dirty items, to use w/ memIterator.
 func (store *Store) dirtyItems(start, end []byte) {
+	// Lazily allocate the sorted write cache; only iterated stores need it.
+	if store.sortedCache.IsNil() {
+		store.sortedCache = internal.NewBTree()
+	}
 	startStr, endStr := conv.UnsafeBytesToStr(start), conv.UnsafeBytesToStr(end)
 	if end != nil && startStr > endStr {
 		// Nothing to do here.
