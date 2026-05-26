@@ -36,7 +36,12 @@ func (ci CommitInfo) Hash() []byte {
 		return emptyHash[:]
 	}
 
-	rootHash, _, _ := maps.ProofsFromMap(ci.toMap())
+	// Compute only the root hash. ProofsFromMap would also build a full merkle
+	// proof for every store and proto-encode each one, all of which Hash
+	// discards. That is a major allocation/GC source because LastCommitID /
+	// CommitID recompute this on every call. RootHashFromMap returns the
+	// byte-identical root without the proof allocations.
+	rootHash := maps.RootHashFromMap(ci.toMap())
 
 	if len(rootHash) == 0 {
 		emptyHash := sha256.Sum256([]byte{})
