@@ -1,0 +1,25 @@
+syntax = "proto3";
+package cosmos.stakingreward.v1;
+
+option go_package = "github.com/cosmos/cosmos-sdk/x/stakingreward/types";
+
+import "gogoproto/gogo.proto";
+import "amino/amino.proto";
+import "cosmos_proto/cosmos.proto";
+import "cosmos/stakingreward/v1/stakingreward.proto";
+
+// GenesisState defines the x/stakingreward module's genesis state.
+message GenesisState {
+  // params defines all the parameters of the module.
+  Params params = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+
+  // per_slot_reward is the cached per-block release amount. It is recomputed
+  // whenever the pool balance changes (funding) or params are updated. When
+  // empty/zero it is recomputed from the pool balance at InitGenesis.
+  string per_slot_reward = 2 [
+    (cosmos_proto.scalar)  = "cosmos.Int",
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable)   = false,
+    (amino.dont_omitempty) = true
+  ];
+}

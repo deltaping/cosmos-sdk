@@ -1,0 +1,62 @@
+syntax = "proto3";
+package cosmos.stakingreward.v1;
+
+option go_package = "github.com/cosmos/cosmos-sdk/x/stakingreward/types";
+
+import "cosmos/msg/v1/msg.proto";
+import "amino/amino.proto";
+import "gogoproto/gogo.proto";
+import "cosmos_proto/cosmos.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "cosmos/stakingreward/v1/stakingreward.proto";
+
+// Msg defines the x/stakingreward Msg service.
+service Msg {
+  option (cosmos.msg.v1.service) = true;
+
+  // UpdateParams defines a governance operation for updating the x/stakingreward
+  // module parameters. The authority defaults to the x/gov module account.
+  rpc UpdateParams(MsgUpdateParams) returns (MsgUpdateParamsResponse);
+
+  // FundRewardPool allows any account to deposit native tokens into the staking
+  // reward pool.
+  rpc FundRewardPool(MsgFundRewardPool) returns (MsgFundRewardPoolResponse);
+}
+
+// MsgUpdateParams is the Msg/UpdateParams request type.
+message MsgUpdateParams {
+  option (cosmos.msg.v1.signer) = "authority";
+  option (amino.name)           = "cosmos-sdk/x/stakingreward/MsgUpdateParams";
+
+  // authority is the address that controls the module (defaults to x/gov unless overwritten).
+  string authority = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // params defines the x/stakingreward parameters to update.
+  //
+  // NOTE: All parameters must be supplied.
+  Params params = 2 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+}
+
+// MsgUpdateParamsResponse defines the response structure for executing a
+// MsgUpdateParams message.
+message MsgUpdateParamsResponse {}
+
+// MsgFundRewardPool is the Msg/FundRewardPool request type.
+message MsgFundRewardPool {
+  option (cosmos.msg.v1.signer) = "depositor";
+  option (amino.name)           = "cosmos-sdk/x/stakingreward/MsgFundRewardPool";
+
+  // amount is the list of coins to deposit into the reward pool.
+  repeated cosmos.base.v1beta1.Coin amount = 1 [
+    (gogoproto.nullable)     = false,
+    (amino.dont_omitempty)   = true,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"
+  ];
+
+  // depositor is the address funding the reward pool.
+  string depositor = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+}
+
+// MsgFundRewardPoolResponse defines the response structure for executing a
+// MsgFundRewardPool message.
+message MsgFundRewardPoolResponse {}

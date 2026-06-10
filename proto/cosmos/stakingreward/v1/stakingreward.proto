@@ -1,0 +1,23 @@
+syntax = "proto3";
+package cosmos.stakingreward.v1;
+
+option go_package = "github.com/cosmos/cosmos-sdk/x/stakingreward/types";
+
+import "gogoproto/gogo.proto";
+import "amino/amino.proto";
+
+// Params defines the parameters for the x/stakingreward module.
+message Params {
+  option (amino.name) = "cosmos-sdk/x/stakingreward/Params";
+
+  // reward_denom is the native token denomination released from the pool.
+  string reward_denom = 1;
+
+  // blocks_per_year is the expected number of blocks produced in a year. It is
+  // used together with the pool balance to derive the per-block release amount
+  // (per_slot_reward = pool_balance / blocks_per_year).
+  uint64 blocks_per_year = 2;
+
+  // enabled toggles the per-block release of staking rewards.
+  bool enabled = 3;
+}

@@ -1,0 +1,55 @@
+syntax = "proto3";
+package cosmos.stakingreward.v1;
+
+option go_package = "github.com/cosmos/cosmos-sdk/x/stakingreward/types";
+
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "amino/amino.proto";
+import "cosmos_proto/cosmos.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "cosmos/stakingreward/v1/stakingreward.proto";
+
+// Query defines the gRPC querier service for the x/stakingreward module.
+service Query {
+  // Params returns the total set of x/stakingreward parameters.
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (google.api.http).get = "/cosmos/stakingreward/v1/params";
+  }
+
+  // Pool returns the current reward pool balance, the cached per-block release
+  // amount and the estimated number of blocks the pool can keep paying.
+  rpc Pool(QueryPoolRequest) returns (QueryPoolResponse) {
+    option (google.api.http).get = "/cosmos/stakingreward/v1/pool";
+  }
+}
+
+// QueryParamsRequest is the request type for the Query/Params RPC method.
+message QueryParamsRequest {}
+
+// QueryParamsResponse is the response type for the Query/Params RPC method.
+message QueryParamsResponse {
+  // params defines the parameters of the module.
+  Params params = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+}
+
+// QueryPoolRequest is the request type for the Query/Pool RPC method.
+message QueryPoolRequest {}
+
+// QueryPoolResponse is the response type for the Query/Pool RPC method.
+message QueryPoolResponse {
+  // balance is the current reward pool balance in the reward denom.
+  cosmos.base.v1beta1.Coin balance = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+
+  // per_slot_reward is the cached per-block release amount.
+  string per_slot_reward = 2 [
+    (cosmos_proto.scalar)  = "cosmos.Int",
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable)   = false,
+    (amino.dont_omitempty) = true
+  ];
+
+  // estimated_blocks_remaining is floor(balance / per_slot_reward); the number
+  // of additional blocks the pool can keep paying at the current rate.
+  uint64 estimated_blocks_remaining = 3;
+}
